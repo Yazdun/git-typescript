@@ -39,12 +39,11 @@ function catFile(): void {
   try {
     const compressed = fs.readFileSync(blobPath);
     const decompressed = zlib.unzipSync(new Uint8Array(compressed)).toString();
-    console.log(decompressed);
-  } catch (err) {
-    console.log("folder is: ", folder);
-    console.log("file is: ", file);
-    console.log("blobPath is: ", blobPath);
 
+    process.stdout.write(
+      decompressed.substring(decompressed.indexOf("\x00") + 1),
+    );
+  } catch (err) {
     console.error(err);
   }
 }
