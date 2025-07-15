@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as zlib from "zlib";
+import * as crypto from "crypto";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -48,4 +49,39 @@ function catFile(): void {
   }
 }
 
-function hashObject() {}
+function hashObject() {
+  const fileName = args.at(-1);
+
+  if (!fileName) {
+    console.error("File name is required.");
+    return;
+  }
+
+  const filePath = path.join(process.cwd(), fileName);
+  const fileContent = fs.readFileSync(filePath);
+
+  const objectBuffer = new Uint8Array(
+    Buffer.from(`blob ${fileContent.length}\x00${fileContent.toString()}`),
+  );
+
+  const blobData = new Uint8Array(zlib.deflateSync(objectBuffer));
+
+  const objectSha = crypto
+    .createHash("sha1")
+    .update(objectBuffer)
+    .digest("hex");
+
+  const objectFolder = objectSha.substring(0, 2);
+  const objectFile = objectSha.substring(2);
+  const objectDirPath = path.join(
+    process.cwd(),
+    ".git",
+    "objects",
+    objectFolder,
+  );
+
+  fs.mkdirSync(objectDirPath, { recursive: true });
+  fs.writeFileSync(path.join(objectDirPath, objectFile), blobData);
+
+  process.stdout.write(objectSha);
+}
